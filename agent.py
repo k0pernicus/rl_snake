@@ -109,7 +109,7 @@ def train():
     scores       = []
     mean_scores  = []
     total_scores = 0
-    record       = 0
+    max_score       = 0
 
     agent = SnakeAgent()
     game  = SnakeGame()
@@ -135,11 +135,11 @@ def train():
             # In this case, replay memory in order to improve the agent
             agent.train_long_memory()
 
-            if score > record:
-                record = score
+            if score > max_score:
+                max_score = score
                 agent.model.save()
 
-            print(f"Game {agent.n_games}, score {score} with record of {record}")
+            print(f"Game {agent.n_games}, score {score} with max score of {max_score}")
 
             scores.append(score)
             total_scores += score

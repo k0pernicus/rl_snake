@@ -96,8 +96,7 @@ class SnakeGame:
         self.snake.insert(0, self.head)
 
         game_over = False
-        # TODO : check with the length of the snake ( it has to eat... )
-        if self._is_collision() or self._n_steps > 30*len(self.snake):
+        if self._is_collision() or self._n_steps > 80: # the snake must find the optimal solution in 80 steps
             game_over = True
             return BAD_REWARD, game_over, self.score
 
@@ -105,6 +104,7 @@ class SnakeGame:
         if self.head == self.food:
             reward = GOOD_REWARD
             self.score += 1
+            self._n_steps = 0
             self._place_food()
         else:
             # Calculate new distance
@@ -154,9 +154,11 @@ class SnakeGame:
 
         if len(self._plot_scores) == 0:
             text_run_nb = font.render(f"Nb run: {self._n_games}", True, WHITE)
+            text_steps = font.render(f"Steps: {self._n_steps}", True, WHITE)
             text_score = font.render(f"Score: {self.score}", True, WHITE)
 
             self.display.blit(text_run_nb, (chart_x, 10))
+            self.display.blit(text_steps, (chart_x + 150, 10))
             self.display.blit(text_score, (chart_x, 30))
 
             return
@@ -182,13 +184,15 @@ class SnakeGame:
             points_mean = [_get_pt(i, m) for i, m in enumerate(recent_means)]
             pygame.draw.lines(self.display, (255, 0, 255), False, points_mean, 2)
 
-        # Current Score / Record / Avg
+        # Current Score / Max score / Avg
         text_run_nb = font.render(f"Nb run: {self._n_games}", True, WHITE)
+        text_steps = font.render(f"Steps: {self._n_steps}", True, WHITE)
         text_score = font.render(f"Score: {self.score}", True, WHITE)
-        text_rec = font.render(f"High score: {max(self._plot_scores)}", True, WHITE) # Global Record
+        text_rec = font.render(f"High score: {max(self._plot_scores)}", True, WHITE) # Highest score
         text_avg = font.render(f"Avg: {recent_means[-1]:.2f}", True, (255, 0, 255))
 
         self.display.blit(text_run_nb, (chart_x, 10))
+        self.display.blit(text_steps, (chart_x + 150, 10))
         self.display.blit(text_score, (chart_x, 30))
         self.display.blit(text_rec, (chart_x + 150, 30))
         self.display.blit(text_avg, (chart_x, chart_y + chart_h + 30))
