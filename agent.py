@@ -13,11 +13,14 @@ DISCOUNT_RATE = 0.9
 
 N_HIDDEN_LAYERS = 128 # Number of hidden layers in the QNet
 
+DECAY_RATE = 0.995
+MIN_EPSILON = 0.02
+
 class SnakeAgent:
 
     def __init__(self):
         self.n_games = 0
-        self.epsilon = 0 # Control the randomness
+        self.epsilon = 1.0 # Control the randomness
         self.gamma   = DISCOUNT_RATE # Discount rate (must be smaller than 1)
         self.memory  = deque(maxlen=MAX_MEM) # Maximum memory of actions, rewards, ...
         self.model   = Linear_QNet(11, N_HIDDEN_LAYERS, 3) # 11 states, 3 actions
@@ -25,13 +28,12 @@ class SnakeAgent:
 
     def get_action(self, state):
         # random move : exploration vs exploitation
-        # Let the first 60 plays do exploration, and privilege exploitation
-        # until the end of the experiments
-        self.epsilon = 60 - self.n_games
+        # Let a minimum of 2 games / 100 for exploration, even after a long time
+        self.epsilon = max(self.epsilon * DECAY_RATE, MIN_EPSILON)
         moves = [0, 0, 0]
 
         # 200 seems too large here to not explore...
-        if random.randint(0, 100) < self.epsilon:
+        if random.random() < self.epsilon:
             # Exploration...
             idx = random.randint(0, 2)
             moves[idx] = 1
