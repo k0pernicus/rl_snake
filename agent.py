@@ -14,7 +14,7 @@ DISCOUNT_RATE = 0.9
 N_HIDDEN_LAYERS = 128 # Number of hidden layers in the QNet
 
 DECAY_RATE = 0.995
-MIN_EPSILON = 0.02
+MIN_EPSILON = 0.01
 
 class SnakeAgent:
 
@@ -28,7 +28,7 @@ class SnakeAgent:
 
     def get_action(self, state):
         # random move : exploration vs exploitation
-        # Let a minimum of 2 games / 100 for exploration, even after a long time
+        # Let a (in theory) maximum of 1 game / 100 for exploration, even after a long time
         self.epsilon = max(self.epsilon * DECAY_RATE, MIN_EPSILON)
         moves = [0, 0, 0]
 
