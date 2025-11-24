@@ -23,7 +23,7 @@ class SnakeAgent:
         self.epsilon = 1.0 # Control the randomness
         self.gamma   = DISCOUNT_RATE # Discount rate (must be smaller than 1)
         self.memory  = deque(maxlen=MAX_MEM) # Maximum memory of actions, rewards, ...
-        self.model   = Linear_QNet(11, N_HIDDEN_LAYERS, 3) # 11 states, 3 actions
+        self.model   = Linear_QNet(13, N_HIDDEN_LAYERS, 3) # 13 states, 3 actions
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_action(self, state):
@@ -32,7 +32,8 @@ class SnakeAgent:
         self.epsilon = max(self.epsilon * DECAY_RATE, MIN_EPSILON)
         moves = [0, 0, 0]
 
-        # 200 seems too large here to not explore...
+        # Important, as if the epsilon is too low then there will be no exploration,
+        # and the snake will fall into local optimum problem
         if random.random() < self.epsilon:
             # Exploration...
             idx = random.randint(0, 2)
@@ -49,45 +50,76 @@ class SnakeAgent:
     def get_state(self, game):
         head = game.snake[0]
 
-        coord_l = Point(head.x - BLOCK_SIZE, head.y)
-        coord_r = Point(head.x + BLOCK_SIZE, head.y)
-        coord_u = Point(head.x, head.y - BLOCK_SIZE)
-        coord_d = Point(head.x, head.y + BLOCK_SIZE)
+        point_l = Point(head.x - BLOCK_SIZE, head.y)
+        point_r = Point(head.x + BLOCK_SIZE, head.y)
+        point_u = Point(head.x, head.y - BLOCK_SIZE)
+        point_d = Point(head.x, head.y + BLOCK_SIZE)
 
         dir_l = game.direction == Direction.LEFT
         dir_r = game.direction == Direction.RIGHT
         dir_u = game.direction == Direction.UP
         dir_d = game.direction == Direction.DOWN
 
+        # Standard vectors
+        vec_l = (-BLOCK_SIZE, 0)
+        vec_r = (BLOCK_SIZE, 0)
+        vec_u = (0, -BLOCK_SIZE)
+        vec_d = (0, BLOCK_SIZE)
+
+        dirs = []
+        if   dir_r: dirs = [vec_r, vec_d, vec_u, (BLOCK_SIZE, BLOCK_SIZE), (BLOCK_SIZE, -BLOCK_SIZE)]
+        elif dir_l: dirs = [vec_l, vec_u, vec_d, (-BLOCK_SIZE, -BLOCK_SIZE), (-BLOCK_SIZE, BLOCK_SIZE)]
+        elif dir_u: dirs = [vec_u, vec_r, vec_l, (BLOCK_SIZE, -BLOCK_SIZE), (-BLOCK_SIZE, -BLOCK_SIZE)]
+        elif dir_d: dirs = [vec_d, vec_l, vec_r, (-BLOCK_SIZE, BLOCK_SIZE), (BLOCK_SIZE, BLOCK_SIZE)]
+
+        def get_distance_from_collision(direction_vector):
+            """
+            Compute the distance between the current position of the snake and a collision
+            This returns a float (good for the NN) between 0.0 (far away) and 1.0 (immediate danger)
+            """
+            current_pos = Point(head.x, head.y)
+            dist = 0
+
+            while True:
+                current_pos = Point(current_pos.x + direction_vector[0],
+                                    current_pos.y + direction_vector[1])
+                dist += 1
+
+                # If we hit something, return INVERSE distance
+                if game._is_collision(current_pos):
+                        # 1.0 = Immediate Death
+                        # 0.5 = 1 step safety
+                        # 0.1 = Far away
+                    return 1.0 / dist
+
+                # Optimization: Stop looking after 12 blocks to save performance
+                if dist > 12: return 0.0
+
+        collision_distance_ahead = get_distance_from_collision(dirs[0])
+        collision_distance_right = get_distance_from_collision(dirs[1])
+        collision_distance_left = get_distance_from_collision(dirs[2])
+        collision_distance_diag_front_right = get_distance_from_collision(dirs[3])
+        collision_distance_diag_front_left = get_distance_from_collision(dirs[4])
+
         state = [
-            # Danger straight
-            (dir_r and game._is_collision(coord_r)) or
-            (dir_l and game._is_collision(coord_l)) or
-            (dir_u and game._is_collision(coord_u)) or
-            (dir_d and game._is_collision(coord_d)),
-            # Danger right
-            (dir_u and game._is_collision(coord_r)) or
-            (dir_d and game._is_collision(coord_l)) or
-            (dir_l and game._is_collision(coord_u)) or
-            (dir_r and game._is_collision(coord_d)),
-            # Danger left
-            (dir_d and game._is_collision(coord_r)) or
-            (dir_u and game._is_collision(coord_l)) or
-            (dir_r and game._is_collision(coord_u)) or
-            (dir_l and game._is_collision(coord_d)),
-            # Direction
+            collision_distance_ahead,
+            collision_distance_right,
+            collision_distance_left,
+            collision_distance_diag_front_right,
+            collision_distance_diag_front_left,
+
             dir_l,
             dir_r,
             dir_u,
             dir_d,
-            # Food
-            game.food.x < game.head.x, # Food is left ?
-            game.food.x > game.head.x, # Food is right ?
-            game.food.y < game.head.y, # Food is up ?
-            game.food.y > game.head.y, # Food is down ?
+
+            game.food.x < game.head.x,
+            game.food.x > game.head.x,
+            game.food.y < game.head.y,
+            game.food.y > game.head.y
         ]
 
-        return np.array(state, dtype=int)
+        return np.array(state, dtype=float)
 
     def remember(self, state, action, reward, next_state, game_over):
         self.memory.append((state, action, reward, next_state, game_over))
