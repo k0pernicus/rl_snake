@@ -11,7 +11,7 @@ BATCH_SIZE = 1_000
 LR = 0.01 # Learning Rate
 DISCOUNT_RATE = 0.9
 
-N_HIDDEN_LAYERS = 128 # Number of hidden layers in the QNet
+N_HIDDEN_LAYERS = 256 # Size of the hidden layer in the QNet
 
 DECAY_RATE = 0.995
 MIN_EPSILON = 0.01
