@@ -32,6 +32,7 @@ BLACK = (0,0,0)
 
 BLOCK_SIZE = 20
 SPEED = 20
+MAX_STEPS_PER_PATH = 140 # We do not allow the snake to spend more than 140 steps to look for the food
 
 STATS_DASHBOARD_WIDTH = 320
 
@@ -96,7 +97,7 @@ class SnakeGame:
         self.snake.insert(0, self.head)
 
         game_over = False
-        if self._is_collision() or self._n_steps > 80: # the snake must find the optimal solution in 80 steps
+        if self._is_collision() or self._n_steps > MAX_STEPS_PER_PATH: # the snake must find the optimal solution in 80 steps
             game_over = True
             return BAD_REWARD, game_over, self.score
 
