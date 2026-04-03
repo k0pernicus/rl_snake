@@ -19,3 +19,13 @@ source .venv/bin/activate # or "uv venv" if no virtual environment is included
 uv sync
 uv run agent.py
 ```
+
+## Nix setup
+
+If you run on nixOS, you can try to build the application in a nix shell and run the program in it:
+
+```bash
+nix-shell # should load shell.nix
+uv run agent.py
+```
+
