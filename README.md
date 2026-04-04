@@ -10,7 +10,7 @@ This project currently uses QNet with two affine linear transforms (see `model.p
 
 ## Setup
 
-You must use Python 3.14.
+You must use **at least** Python 3.12.
 
 Using `uv`:
 
